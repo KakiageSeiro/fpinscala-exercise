@@ -1,3 +1,6 @@
+package EXERCISE2
+
+import EXERCISE2.フィボナッチ数
 import org.scalatest.concurrent.TimeLimits
 import org.scalatest.diagrams.Diagrams
 import org.scalatest.flatspec.AnyFlatSpec
@@ -26,5 +29,4 @@ class フィボナッチ数Test extends AnyFlatSpec with Diagrams with TimeLimit
     assert(フィボナッチ数.fib2(8) == 13)
     assert(フィボナッチ数.fib2(9) == 21)
   }
-
 }
