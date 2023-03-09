@@ -19,7 +19,7 @@ class 型推論Test extends AnyFlatSpec with Diagrams with TimeLimits {
 
   "引数逆_fの型指定しないで" should "よびだし" in {
     // コンパイル時にエラー(missing parameter type)になる
-    assert(型推論.dropWhileReverse((a) => a < 3, List2(1, 2, 3, 4)) == List2(3, 4))
+    // assert(型推論.dropWhileReverse((a) => a < 3, List2(1, 2, 3, 4)) == List2(3, 4))
   }
 
   "カリー化した" should "型推論できるので通る" in {
