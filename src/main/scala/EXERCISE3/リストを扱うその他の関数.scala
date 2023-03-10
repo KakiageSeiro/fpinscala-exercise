@@ -71,4 +71,14 @@ object リストを扱うその他の関数 {
       case (Cons(head1, tail1), Cons(head2, tail2)) => Cons(f(head1, head2), zipWith(tail1, tail2)(f))
     }
   }
+
+  def scanListを試す(list: List[Int]): List[Int] = {
+    // 累積和かんたん！
+    list.scanLeft(0)(_ + _)
+  }
+
+  def scanRightを試す(list: List[Int]): List[Int] = {
+    // 計算途中の結果を出してくれる。つまり計算途中のaccumulatorの値を出してくれる。
+    list.scanRight(0)(_ + _)
+  }
 }

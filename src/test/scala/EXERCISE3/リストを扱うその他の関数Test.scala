@@ -39,4 +39,12 @@ class リストを扱うその他の関数Test extends AnyFlatSpec with Diagrams
     assert(リストを扱うその他の関数.zipWith(List2(1, 2, 3), List2(4, 5, 6))((a: Int, b: Int) => a + b) == List2(5, 7, 9))
     assert(リストを扱うその他の関数.zipWith(List2(1, 2, 3), List2(4, 5, 6))((a: Int, b: Int) => a * b) == List2(4, 10, 18))
   }
+
+  "scanList" should "よ" in {
+    assert(リストを扱うその他の関数.scanListを試す(List(1, 2, 3, 4)) == List(0, 1, 3, 6, 10))
+  }
+
+  "scanRight" should "よ" in {
+    assert(リストを扱うその他の関数.scanRightを試す(List(1, 2, 3, 4)) == List(10, 9, 7, 4, 0))
+  }
 }
