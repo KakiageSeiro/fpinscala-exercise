@@ -154,6 +154,4 @@ class 二分木Test extends AnyFlatSpec with Diagrams with TimeLimits {
 
     assert(二分木.mapViaFold(blanch3)(a => a + a) == 期待値_blanch3)
   }
-
-
 }
