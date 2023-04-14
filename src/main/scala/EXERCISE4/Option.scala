@@ -1,5 +1,7 @@
 package EXERCISE4
 
+import EXERCISE4.Option.None.map2
+
 object Option {
   // EXERCISE 4.1
   // 基本的に問題が言ってることがわからない。翻訳のアレかも。というわけで関数名から推測した実装にする。
@@ -62,5 +64,20 @@ object Option {
     // 途中の要素がNoneだった場合、hにNoneが入り、flatMapでNoneがreturnされる
     // 呼出し元の再起sequenceからNoneが返ってくるので、後続mapが動かずそのままNoneがreturnし、再起の最初までNoneが返る。
     // この問題は要素を一つずつみる事と、そのときにNoneだったらmapが動かない性質を利用することを思いつく必要があったっぽい。
+  }
+
+  def traverse[A, B](a: List[A])(f: A => Option[B]): Option[List[B]] = a match {
+    case Nil => Some(Nil)
+    case head :: tail => map2(f(head), traverse(tail)(f))(_ :: _)
+  }
+
+  // 2つflatMapしたい時はfor使ったほうが見やすいかも
+  def traverse_for[A, B](a: List[A])(f: A => Option[B]): Option[List[B]] = {
+    if (a.isEmpty) return Some(Nil)
+
+    for {
+      head <- f(a.head)
+      tail <- traverse(a.tail)(f)
+    } yield head :: tail
   }
 }
