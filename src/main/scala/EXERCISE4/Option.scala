@@ -66,6 +66,7 @@ object Option {
     // この問題は要素を一つずつみる事と、そのときにNoneだったらmapが動かない性質を利用することを思いつく必要があったっぽい。
   }
 
+  // EXERCISE 4.5
   def traverse[A, B](a: List[A])(f: A => Option[B]): Option[List[B]] = a match {
     case Nil => Some(Nil)
     case head :: tail => map2(f(head), traverse(tail)(f))(_ :: _)
