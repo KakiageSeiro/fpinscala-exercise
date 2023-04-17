@@ -36,3 +36,25 @@ case class Right[+A](value: A) extends Either2[Nothing, A]
 //}
 //
 //def insuranceRateQuote(i: Int, i1: Int): Either2[Exception, Double] = Right(1.0)
+
+object Either2{
+  def sequence[E, A](es: List[Either2[E, A]]): Either2[E, List[A]] = es match {
+    case Nil => Right(Nil)
+    case h :: t => h.flatMap(hh => sequence(t).map(tt => hh :: tt))
+  }
+
+  // 構造(List)を保ったまま要素に関数を適用する。各要素に適用する関数fは文脈Gを付けて返す関数。戻り値は変換後の型Bを文脈Gでくるんだ型。
+  def traverse[E, A, B](as: List[A])(f: A => Either2[E, B]): Either2[E, List[B]] = as match {
+    case Nil => Right(Nil)
+    case h :: t => f(h).flatMap(hh => traverse(t)(f).map(tt => hh :: tt))
+  }
+
+  def traverse_for[E, A, B](as: List[A])(f: A => Either2[E, B]): Either2[E, List[B]] = {
+    if (as.isEmpty) return Right(Nil)
+
+    for {
+      h <- f(as.head)
+      t <- traverse_for(as.tail)(f)
+    } yield h :: t
+  }
+}
