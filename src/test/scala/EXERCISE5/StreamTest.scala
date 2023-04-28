@@ -4,6 +4,8 @@ import org.scalatest.concurrent.TimeLimits
 import org.scalatest.diagrams.Diagrams
 import org.scalatest.flatspec.AnyFlatSpec
 
+
+
 class StreamTest extends AnyFlatSpec with Diagrams with TimeLimits {
   "headOption" should "とれる" in {
     val cons = Cons(() => 1, () => Empty)
@@ -162,5 +164,211 @@ class StreamTest extends AnyFlatSpec with Diagrams with TimeLimits {
   "takeとtoList" should "いっしょにつかうよ" in {
     val list: List[Int] = Stream(1, 2, 3).take(2).toList
     assert(list == List(1, 2))
+  }
+
+
+  "forAll" should "すべて該当" in {
+    val cons = Stream.cons({println("Consの要素評価1"); 1 }, Stream.cons({println("Consの要素評価2"); 2 }, Stream.cons({println("Consの要素評価3"); 3 }, Stream.empty)))
+    assert(cons.forAll(_ < 4))
+  }
+
+  it should "先頭2つまで該当" in {
+    val cons = Stream.cons(1, Stream.cons(2, Stream.cons(3, Stream.cons(throw new Exception("tail evaluated"), Stream.empty))))
+    assert(cons.forAll(_ < 3))
+  }
+
+
+  "takeWhile_foldRight" should "takeWhileのテストと同じ" in {
+    val s = Stream(1, 2, 3, 4, 5)
+    val result = s.takeWhile_foldRight(_ < 3).toList
+    assert(result == List(1, 2))
+
+    val s2 = Stream(1, 2, 3, 4, 5)
+    val result2 = s2.takeWhile_foldRight(_ % 2 == 1).toList
+    assert(result2 == List(1))
+
+    val s3 = Stream.empty[Int]
+    val result3 = s3.takeWhile_foldRight(_ < 3).toList
+    assert(result3 == List.empty[Int])
+
+    val s4 = Stream(1, 2, 3, 4, 5)
+    val result4 = s4.takeWhile_foldRight(_ > 5).toList
+    assert(result4 == List.empty[Int])
+  }
+
+  "headOption_foldRight" should "とれる" in {
+    val cons = Cons(() => 1, () => Empty)
+    assert(cons.headOption_foldRight == Some(1))
+  }
+
+  "headOption_foldRight" should "とれる2" in {
+    val cons = Stream.cons(
+      {
+        println("Consの要素評価1"); () => 1
+      },
+      Stream.cons(
+        {
+          println("Consの要素評価2"); () => 2
+        },
+        Stream.cons(
+          {
+            println("Consの要素評価3"); () => 3
+          },
+          Stream.empty)))
+
+    val result: Option[() => Int] = cons.headOption_foldRight
+    result match {
+      case Some(x) => assert(x() == 1)
+      case None => assert(false)
+    }
+  }
+
+  "headOption_foldRight" should "とれる3" in {
+    val cons = Stream.cons(
+      {
+        println("Consの要素評価1"); 1
+      },
+      Stream.cons(
+        {
+          println("Consの要素評価2"); 2
+        },
+        Stream.cons(
+          {
+            println("Consの要素評価3"); 3
+          },
+          Stream.empty)))
+
+    val result: Option[Int] = cons.headOption_foldRight
+    result match {
+      case Some(x) => assert(x == 1)
+      case None => assert(false)
+    }
+  }
+
+  "map" should "変換できる" in {
+    val cons = Stream.cons(
+      {
+        println("Consの要素評価1");
+        1
+      },
+      Stream.cons(
+        {
+          println("Consの要素評価2");
+          2
+        },
+        Stream.cons(
+          {
+            println("Consの要素評価3");
+            3
+          },
+          Stream.empty)))
+
+    val result = cons.map(_ + 1).toList
+    assert(result == List(2, 3, 4))
+  }
+
+  "filter" should "しぼれる" in {
+    val cons = Stream.cons(
+      {
+        println("Consの要素評価1");
+        1
+      },
+      Stream.cons(
+        {
+          println("Consの要素評価2");
+          2
+        },
+        Stream.cons(
+          {
+            println("Consの要素評価3");
+            3
+          },
+          Stream.empty)))
+
+    val result = cons.filter(_ % 2 == 0).toList
+    assert(result == List(2))
+  }
+
+  "append" should "末尾に追加できる" in {
+    val cons1 = Stream.cons({println("Consの要素評価1"); 1}, Stream.cons({println("Consの要素評価2"); 2}, Stream.cons({println("Consの要素評価3"); 3}, Stream.empty)))
+    val cons2 = Stream.cons({println("Consの要素評価4"); 4}, Stream.cons({println("Consの要素評価5"); 5}, Stream.cons({println("Consの要素評価6"); 6}, Stream.empty)))
+
+    val result = cons1.append(cons2).toList
+    assert(result == List(1, 2, 3, 4, 5, 6))
+  }
+
+  "append" should "スーパータイプを追加" in {
+    val cons = Stream.cons({println("Consの要素評価1"); 1}, Stream.cons({println("Consの要素評価2"); 2}, Stream.cons({println("Consの要素評価3"); 3}, Stream.empty)))
+    val stream = Stream(1, 2, 3)
+
+    val result = cons.append(stream).toList
+    assert(result == List(1, 2, 3, 1, 2, 3))
+  }
+
+  "append" should "サブタイプを追加" in {
+    val cons = Stream.cons({println("Consの要素評価1"); 1}, Stream.cons({println("Consの要素評価2"); 2}, Stream.cons({println("Consの要素評価3"); 3}, Stream.empty)))
+    val stream = Stream(1, 2, 3)
+
+    val result = stream.append(cons).toList
+    assert(result == List(1, 2, 3, 1, 2, 3))
+  }
+
+  "append" should "スーパータイプ同士" in {
+    val stream1 = Stream(1, 2, 3)
+    val stream2 = Stream(1, 2, 3)
+
+    val result = stream1.append(stream2).toList
+    assert(result == List(1, 2, 3, 1, 2, 3))
+  }
+
+  "flatMap" should "文脈付き変換できる" in {
+    val cons = Stream.cons({println("Consの要素評価1"); 1}, Stream.cons({println("Consの要素評価2"); 2}, Stream.cons({println("Consの要素評価3"); 3}, Stream.empty)))
+
+    val result = cons.flatMap(x => Stream(x + 1)).toList
+    assert(result == List(2, 3, 4))
+  }
+
+  "constant" should "無限" in {
+    val 無限a = Stream.constant(42)
+
+    val result1 = 無限a.take(3).toList
+    assert(result1 == List(42, 42, 42))
+
+    val result2 = 無限a.take(5).toList
+    assert(result2 == List(42, 42, 42, 42, 42))
+  }
+
+  "from" should "無限" in {
+    val nからの無限 = Stream.from(3)
+
+    val result1 = nからの無限.take(3).toList
+    assert(result1 == List(3, 4, 5))
+
+    val result2 = nからの無限.take(5).toList
+    assert(result2 == List(3, 4, 5, 6, 7))
+  }
+
+  "fibs" should "無限" in {
+    val fibs = Stream.fibs()
+
+    val result1 = fibs.take(3).toList
+    assert(result1 == List(0, 1, 1))
+
+    val result2 = fibs.take(10).toList
+    assert(result2 == List(0, 1, 1, 2, 3, 5, 8, 13, 21, 34))
+  }
+
+
+  "unfold" should "無限" in {
+    def generateNext(value: Int): Option[(Int, Int)] = {
+      if (value < 5)
+        Some((value, value + 1))
+      else
+        None
+    }
+
+    val result = Stream.unfold(0)(generateNext).toList
+    val expected = List(0, 1, 2, 3, 4)
+    assert(result == expected)
   }
 }
