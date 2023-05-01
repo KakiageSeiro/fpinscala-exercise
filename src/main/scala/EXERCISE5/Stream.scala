@@ -26,7 +26,7 @@ trait Stream[+A] {
   }
 
   // EXERCISE 5.1
-  def toList: List[A] =  {
+  def toList: List[A] = {
     println("toList:start")
 
     val result = this match {
@@ -99,8 +99,8 @@ trait Stream[+A] {
   }
 
   // EXERCISE 5.5
-  def foldRight[B](z : => B)(f: (A, => B) => B): B = this match{
-    case Cons(h,t) => f(h(), t().foldRight(z)(f))
+  def foldRight[B](z: => B)(f: (A, => B) => B): B = this match {
+    case Cons(h, t) => f(h(), t().foldRight(z)(f))
     case _ => z
   }
 
@@ -131,9 +131,9 @@ trait Stream[+A] {
   }
 
   // これではcons()の戻り値がStream[Any]になるエラーでコンパイルできない
-//  def append(a: () => Stream[A]): Stream[A] = {
-//    foldRight(a())((h, t) => cons(h, t))
-//  }
+  //  def append(a: () => Stream[A]): Stream[A] = {
+  //    foldRight(a())((h, t) => cons(h, t))
+  //  }
 
   // 答え見た。[B >: A]というのはBはAの親。何回みてもパッとわからない。
   // appendするのにBという型が登場するのが理解できない。ので型パラメータを書くという発想自体できなかった。
@@ -150,13 +150,62 @@ trait Stream[+A] {
   def flatMap[B](f: A => Stream[B]): Stream[B] =
     foldRight(Stream.empty[B])((h, t) => f(h).append(t))
 
+  // EXERCISE 5.13
+  // 答え見た。タプルを一つの型として渡す発想がでてこない。
+  // fの戻り値のOption[A,S]のSは、次のzにすればよい。ということもわかってなかった。
+  // この実装を見た時にループする部分がどこかわからなかった。
+  // ループはunfoldの実装の中で再起していて、OptionがNoneになるまでやる。
+  // なのでunfoldはfor(i = 0; i < 10; i++)の2番目と3番目を書くのと同じように使えるということに今まで気付かなかった。
+  // 2番目の終了条件はなくてもよい。呼出し側がtakeなどをつかうことを期待しゆだねることができる。
+  def take_unfold(n: Int): Stream[A] = {
+    Stream.unfold((this, n)) {
+      case (Cons(h, t), 1) => Some((h(), (Stream.empty, 0))) // 終了条件
+      case (Cons(h, t), n) if n > 1 => Some((h(), (t(), n - 1))) // forの3番目
+      case _ => None
+    }
+  }
 
+  def takeWhile_unfold(f: A => Boolean): Stream[A] = {
+    Stream.unfold(this) { // fは変化しないのでzにしなくてよい
+      case Cons(h, t) if f(h()) => Some((h(), t())) // forの3番目
+      case _ => None
+    }
+  }
+
+  // 答え見た。
+  // 謎。zipAllが3章に登場してなくない？
+  def zipAll[B](s2: Stream[B]): Stream[(Option[A], Option[B])] = {
+    Stream.unfold((this, s2)) {
+      case (Empty, Empty) => None
+      case (Cons(h, t), Empty) => Some((Some(h()), Option.empty[B]) -> (t(), Empty))
+      case (Empty, Cons(h, t)) => Some((Option.empty[A], Some(h())) -> (Empty -> t()))
+      case (Cons(h1, t1), Cons(h2, t2)) => Some((Some(h1()), Some(h2())) -> (t1() -> t2()))
+    }
+  }
+
+  def size(): Int = {
+    foldRight(0)((_, t) => t + 1)
+  }
+
+  // EXERCISE 5.14
+  def startsWith[A](s: Stream[A]): Boolean = {
+    val size = s.size()
+    if (this.size() < size) return false
+
+    // ここでtoListする理由は、一見takeのあとにforAllがあることによって、takeの引数以降のストリームが処理されないように見えるけど、実際にはforAllで最後までストリームが処理される。
+    // forAll内部ではCons(h, t)でパターンマッチしてるので、ストリームの長さが違う場合はfalseになる。
+    // なのでtoListで一旦ストリームを正格化してしまい、takeの指定数に絞ってあげることで後続の比較を実施しないようにしている。
+    Stream.zipWith_unfold(this, s)((a, b) => a == b).take(size).toList.forall(_ == true)
+  }
+
+  // EXERCISE 5.15
+  def tails: Stream[Stream[A]] = {
+    Stream.unfold(this) {
+      case Empty => None
+      case s => Some((s, s.drop(1)))
+    }.append(Stream(Stream.empty))
+  }
 }
-
-
-
-
-
 
 
 case object Empty extends Stream[Nothing]
@@ -188,7 +237,7 @@ object Stream {
   }
 
   // EXERCISE 5.9
-  def from(n: Int):Stream[Int] =
+  def from(n: Int): Stream[Int] =
     Stream.cons(n, from(n + 1))
 
   // EXERCISE 5.10
@@ -208,6 +257,65 @@ object Stream {
       case None => empty
     }
 
+  // EXERCISE 5.12
+  def fibs_unfold(): Stream[Int] = {
+    def 現在状態Aと次の値Sを生成するf(現在状態: (Int, Int)): Option[(Int, (Int, Int))] = {
+      現在状態 match { // 絶対マッチするのでは？
+        case (n1, n2) => Some((n1, (n2, n1 + n2))) // 次の値タプル2つ目は「前回の結果と、次の値」になってるけど本当は次の値だけを返したい。初期状態Sと同じ型でないとだめなので仕方なく。
+      }
+    }
 
+    unfold((0, 1))(現在状態Aと次の値Sを生成するf)
+  }
 
+  def from_undold(n: Int): Stream[Int] = {
+    def 現在状態Aと次の値Sを生成するf(現在状態: Int): Option[(Int, Int)] = {
+      Some(現在状態, 現在状態 + 1)
+    }
+
+    unfold(n)(現在状態Aと次の値Sを生成するf)
+  }
+
+  def constant_unfold[A](a: A): Stream[A] = {
+    def 現在状態Aと次の値Sを生成するf(現在状態: A): Option[(A, A)] = {
+      Some(現在状態, 現在状態)
+    }
+
+    unfold(a)(現在状態Aと次の値Sを生成するf)
+  }
+
+  def ones_unfold(): Stream[Int] = {
+    def 現在状態Aと次の値Sを生成するf(現在状態: Int): Option[(Int, Int)] = {
+      Some(現在状態, 現在状態)
+    }
+
+    unfold(1)(現在状態Aと次の値Sを生成するf)
+  }
+
+  // EXERCISE 5.13
+  // 答え見た。みてもわからん。mapとシグネチャが違うのがそもそも想定外だった。
+  // fに対して「現在状態Aと次の値Sを生成するf」と名前を付けてしまったのが考えを硬直させたように思う。現在状態は「fの引数」という名前にしたほうが良かった。
+  // でもそう考えるとunfoldがなんのためにあるのかを理解できていない。あとfの戻り値がzも一緒に返すのもなぜなのかわかってない(head,tailの構造を前提としているから？)
+  def unfoldViaMap[A, S](z: S)(f: S => Option[(A, S)]): Stream[A] = {
+    //    def 現在状態Aと次の値Sを生成するf(現在状態: A)(f: A => S): Option[(A, S)] = {
+    //      Some((現在状態, f(現在状態)))
+    //    }
+    //
+    //    def go(stream: Stream[A]): Stream[S] = {
+    //      stream match {
+    //        case Empty => empty
+    //        case Cons(h, t) => cons(f(h()), go(t()))
+    //      }
+    //    }
+
+    f(z).map((p: (A, S)) => cons(p._1, unfold(p._2)(f))).getOrElse(empty[A])
+  }
+
+  def zipWith_unfold[A](stream1: Stream[A], stream2: Stream[A])(f: (A, A) => A): Stream[A] = {
+    unfold((stream1, stream2))({
+      case (Empty, _) => None
+      case (_, Empty) => None
+      case (Cons(h1, t1), Cons(h2, t2)) => Some(f(h1(), h2()), (t1(), t2()))
+    })
+  }
 }

@@ -358,7 +358,6 @@ class StreamTest extends AnyFlatSpec with Diagrams with TimeLimits {
     assert(result2 == List(0, 1, 1, 2, 3, 5, 8, 13, 21, 34))
   }
 
-
   "unfold" should "無限" in {
     def generateNext(value: Int): Option[(Int, Int)] = {
       if (value < 5)
@@ -370,5 +369,103 @@ class StreamTest extends AnyFlatSpec with Diagrams with TimeLimits {
     val result = Stream.unfold(0)(generateNext).toList
     val expected = List(0, 1, 2, 3, 4)
     assert(result == expected)
+  }
+
+  "fibs_unfold" should "無限" in {
+    val result = Stream.fibs_unfold().take(10).toList
+    val expected = List(0, 1, 1, 2, 3, 5, 8, 13, 21, 34)
+    assert(result == expected)
+  }
+
+  "from_unfold" should "無限" in {
+    val nからの無限 = Stream.from_undold(3)
+
+    val result1 = nからの無限.take(3).toList
+    assert(result1 == List(3, 4, 5))
+
+    val result2 = nからの無限.take(5).toList
+    assert(result2 == List(3, 4, 5, 6, 7))
+  }
+
+  "constant_unfold" should "無限" in {
+    val 無限a = Stream.constant_unfold(42)
+
+    val result1 = 無限a.take(3).toList
+    assert(result1 == List(42, 42, 42))
+
+    val result2 = 無限a.take(5).toList
+    assert(result2 == List(42, 42, 42, 42, 42))
+  }
+
+  "ones_unfold" should "無限" in {
+    val 無限1 = Stream.ones_unfold()
+
+    val result1 = 無限1.take(3).toList
+    assert(result1 == List(1, 1, 1))
+
+    val result2 = 無限1.take(5).toList
+    assert(result2 == List(1, 1, 1, 1, 1))
+  }
+
+  "unfoldViaMap" should "無限" in {
+    val stream = Stream.unfoldViaMap(1)(s => Some((s, s + 1))).take(5).toList
+    val expected = Stream(1, 2, 3, 4, 5).toList
+    assert(stream == expected)
+  }
+
+  "take_unfold" should "先頭から何個かとる" in {
+    val stream = Stream.cons({
+      println("Consの要素評価1"); 1
+    }, Stream.cons({
+      println("Consの要素評価2"); 2
+    }, Stream.cons({
+      println("Consの要素評価3"); 3
+    }, Stream.empty)))
+
+    val result = stream.take_unfold(2).toList
+    assert(result == List(1, 2))
+  }
+
+  "takeWhile_unfold" should "とれる〜" in {
+    val s = Stream(1, 2, 3, 4, 5)
+    val result = s.takeWhile_unfold(_ < 3).toList
+    assert(result == List(1, 2))
+
+    val s2 = Stream(1, 2, 3, 4, 5)
+    val result2 = s2.takeWhile_unfold(_ % 2 == 1).toList
+    assert(result2 == List(1))
+
+    val s3 = Stream.empty[Int]
+    val result3 = s3.takeWhile_unfold(_ < 3).toList
+    assert(result3 == List.empty[Int])
+
+    val s4 = Stream(1, 2, 3, 4, 5)
+    val result4 = s4.takeWhile_unfold(_ > 5).toList
+    assert(result4 == List.empty[Int])
+  }
+
+  "zipWith" should "よ" in {
+    assert(Stream.zipWith_unfold(Stream(1, 2, 3), Stream(1, 2, 3))((a: Int, b: Int) => a + b).toList == Stream(2, 4, 6).toList)
+    assert(Stream.zipWith_unfold(Stream(1, 2, 3), Stream(4, 5, 6))((a: Int, b: Int) => a + b).toList == Stream(5, 7, 9).toList)
+    assert(Stream.zipWith_unfold(Stream(1, 2, 3), Stream(4, 5, 6))((a: Int, b: Int) => a * b).toList == Stream(4, 10, 18).toList)
+  }
+
+  "size" should "サイズ" in {
+    assert(Stream(1, 2, 3).size == 3)
+    assert(Stream(1, 2, 3, 4, 5).size == 5)
+    assert(Stream(1, 2, 3, 4, 5, 6, 7, 8, 9, 10).size == 10)
+  }
+
+  "startsWith" should "先頭から始まる" in {
+    assert(Stream(1, 2, 3).startsWith(Stream(1, 2)))
+    assert(Stream(1, 2, 3).startsWith(Stream(1, 2, 3)))
+    assert(!Stream(1, 2, 3).startsWith(Stream(1, 2, 3, 4)))
+    assert(!Stream(1, 2, 3).startsWith(Stream(1, 3)))
+    assert(!Stream(1, 2, 3).startsWith(Stream(2, 3)))
+    assert(!Stream(1, 2, 3).startsWith(Stream(2, 3, 4)))
+  }
+
+  "tails" should "サフィックス" in {
+    assert(Stream(1, 2, 3).tails.map(_.toList).toList == List(List(1, 2, 3), List(2, 3), List(3), List.empty[Int]))
   }
 }
