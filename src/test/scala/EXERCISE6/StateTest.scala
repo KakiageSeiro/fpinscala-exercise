@@ -1,6 +1,5 @@
 package EXERCISE6
 
-import EXERCISE6.Random._
 import org.scalatest.concurrent.TimeLimits
 import org.scalatest.diagrams.Diagrams
 import org.scalatest.flatspec.AnyFlatSpec
@@ -28,12 +27,22 @@ class StateTest extends AnyFlatSpec with Diagrams with TimeLimits {
 
   "Machine" should "動かす" in {
     // ロック状態、キャンディ5個、コイン10枚
-    val machine = Machine(true, 5, 10)
+    val machine = Machine(true, 5, 10, 0)
     // 4回キャンディを購入する
     val inputs = List(Coin, Turn, Coin, Turn, Coin, Turn, Coin, Turn)
     val result = 自動販売機.simulateMachine(inputs).run(machine)
     // コイン14枚、キャンディ1個になる
     assert(result._1 == (14, 1))
+  }
+
+  "Machine" should "返却レバー" in {
+    // ロック状態、キャンディ5個、コイン10枚
+    val machine = Machine(true, 5, 10, 0)
+    // 4回キャンディを購入する
+    val inputs = List(Lever, Coin, Turn, Coin, Coin, Coin, Lever)
+    val result = 自動販売機.simulateMachine(inputs).run(machine)
+    // コイン14枚、キャンディ1個になる
+    assert(result._1 == (11, 4))
   }
 }
 

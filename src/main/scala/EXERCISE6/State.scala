@@ -59,13 +59,18 @@ object State {
 
 // (キャンディの)自動販売機
 sealed trait Input // インプットというよりは操作(イベントでも良いかも)
+
 case object Coin extends Input // コイン
+
 case object Turn extends Input // ハンドルを回す
 
-// locked=falseならハンドルを回せる
-case class Machine(locked: Boolean, キャンディ: Int, coins: Int)
+case object Lever extends Input // コイン返却レバーを回す
 
-object 自動販売機{
+// locked=falseならハンドルを回せる
+// currentCoinsはキャンディをもらってない状態で投入されたコインの数。レバーを引くとこれが返却される。
+case class Machine(locked: Boolean, キャンディ: Int, coins: Int, currentCoins: Int)
+
+object 自動販売機 {
   // State[Machine, (Int, Int)]のInt一つ目はコインの数、二つ目はキャンディの数
   def simulateMachine(inputs: List[Input]): State[Machine, (Int, Int)] = for {
     _ <- sequence(inputs.map(input => modify(update(input))))
@@ -74,13 +79,16 @@ object 自動販売機{
 
   def update: Input => Machine => Machine =
     (input: Input) => (s_状態: Machine) =>
-    (input, s_状態) match {
-      case (_, Machine(_, 0, _)) => s_状態 // キャンディがない場合は何もしない
-      case (Coin, Machine(false, _, _)) => s_状態 // ハンドルを回せる状態でコインを入れても何もしない
-      case (Turn, Machine(true, _, _)) => s_状態 // ロック状態ではハンドルを回せない
-      case (Coin, Machine(true, candy, coin)) => // ロック状態でコインを入れたらロック解除
-        Machine(false, candy, coin + 1)
-      case (Turn, Machine(false, candy, coin)) => // ロック解除状態でハンドルを回したらキャンディを出す
-        Machine(true, candy - 1, coin)
-    }
+      (input, s_状態) match {
+        case (_, Machine(_, 0, _, _)) => s_状態 // キャンディがない場合は何もしない
+        case (Coin, Machine(false, _, _, _)) => s_状態 // ハンドルを回せる状態でコインを入れても何もしない
+        case (Turn, Machine(true, _, _, _)) => s_状態 // ロック状態ではハンドルを回せない
+        case (Coin, Machine(true, candy, coin, currentCoins)) => // ロック状態でコインを入れたらロック解除
+          Machine(false, candy, coin + 1, currentCoins + 1)
+        case (Turn, Machine(false, candy, coin, _)) => // ロック解除状態でハンドルを回したらキャンディを出す
+          Machine(true, candy - 1, coin, 0)
+        case (Lever, Machine(true, _, _, _)) => s_状態 // ロック状態でコイン返却レバー回しても意味ない
+        case (Lever, Machine(false, candy, coin, currentCoins)) => // ロック解除状態でコイン返却レバー回したらコインを返却
+          Machine(true, candy, coin - currentCoins, 0)
+      }
 }
