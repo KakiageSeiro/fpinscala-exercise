@@ -38,6 +38,9 @@ object Par {
       UnitFuture(f(af.get, bf.get))
     }
 
+  // EXERCISE 7.3
+  // 答え見た。並行処理がわからなすぎて、答えを見ても理解できない。ので一旦そっちを学習する。
+
   def sum(ints: IndexedSeq[Int]): Par[Int] =
     if (ints.size <= 1)
       Par.unit(ints.headOption getOrElse 0)
