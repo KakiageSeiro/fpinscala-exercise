@@ -2,10 +2,9 @@ package EXERCISE7
 
 import java.util.concurrent.{Callable, ExecutorService, Future, TimeUnit}
 
-case class Par[A](run: A) {}
-
 object Par {
   // unitのために必要なエイリアス
+  // 型エイリアスでは中置構文を使えない。使えるようにしたい時は暗黙の型変換(implicit conversion)を使う。
   type Par[A] = ExecutorService => Future[A]
 
   def unit[A](a: A): Par[A] = (es: ExecutorService) => UnitFuture(a)
@@ -47,6 +46,7 @@ object Par {
       map2(sum(l), sum(r))(_ + _)
     }
 
+  // EXERCISE 7.3
   def map2Timeouts[A, B, C](parA: ExecutorService => Future[A], parB: ExecutorService => Future[B])(abからcにするf: (A, B) => C): ExecutorService => Future[C] = {
     es: ExecutorService =>
       new Future[C] {
@@ -76,6 +76,47 @@ object Par {
         def cancel(evenIfRunning: Boolean): Boolean =
           futureA.cancel(evenIfRunning) || futureB.cancel(evenIfRunning)
       }
+  }
+
+  // EXERCISE 7.4
+  def lazyUnit[A](a: => A): Par[A] = fork(unit(a))
+
+  def asyncF[A, B](f: A => B): A => Par[B] =
+    a => lazyUnit(f(a))
+
+  // EXERCISE 7.5
+  def sequence[A](list: List[Par[A]]): Par[List[A]] =
+    list.foldRight(unit(List.empty[A]))((par, acc) => map2(par, acc)(_ :: _))
+
+  // 答え見た。foldRightの分割統治方の分割部分を別の計算リソースに切り出せるときはlogNの形に出来る
+  def sequenceBalanced[A](parSeq: IndexedSeq[Par[A]]): Par[IndexedSeq[A]] = parSeq match {
+    case IndexedSeq() => unit(IndexedSeq.empty[A])
+    case IndexedSeq(par) if parSeq.size == 1 => map(par)(a => IndexedSeq(a))
+    case _ =>
+      val (l, r) = parSeq.splitAt(parSeq.size / 2)
+      map2(sequenceBalanced(l), sequenceBalanced(r))(_ ++ _)
+  }
+
+  def sequence[A](pas: List[Par[A]]): Par[List[A]] =
+    map(sequenceBalanced(pas.toIndexedSeq))(_.toList)
+
+  def map[A, B](par: Par[A])(f: A => B): Par[B] = {
+    // unit(())は利用しない
+    map2(par, unit(()))((a, _) => f(a))
+  }
+
+  // mapしたあとParで包むよ。並列で計算できるので速い(はず)
+  def parMap[A, B](aList: List[A])(f: A => B): Par[List[B]] = fork {
+    val bList: List[Par[B]] = aList.map(asyncF(f))
+    sequence(bList)
+  }
+
+  // EXERCISE 7.6
+  def parFilter[A](aList: List[A])(f: A => Boolean): Par[List[A]] = {
+    val filter: A => Par[List[A]] =
+      asyncF((a: A) => if (f(a)) List(a) else List.empty[A])
+
+    sequence(aList.map(filter))
   }
 }
 
