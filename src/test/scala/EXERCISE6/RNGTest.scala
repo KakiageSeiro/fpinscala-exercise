@@ -1,12 +1,12 @@
 package EXERCISE6
 
-import EXERCISE6.Random.{Rand, flatMap, int, map2, map2_flatMap, map_flatMap, sequence}
+import EXERCISE6.RNG.{Rand, flatMap, int, map2, map2_flatMap, map_flatMap, sequence}
 import org.scalatest.concurrent.TimeLimits
 import org.scalatest.diagrams.Diagrams
 import org.scalatest.flatspec.AnyFlatSpec
 
 
-class RandomTest extends AnyFlatSpec with Diagrams with TimeLimits {
+class RNGTest extends AnyFlatSpec with Diagrams with TimeLimits {
   "SimpleRNG" should "なんかいやっても同じ" in {
     val int_rng: (Int, RNG) = SimpleRNG(1).nextInt
     assert(int_rng._1 == 384748)
@@ -14,49 +14,49 @@ class RandomTest extends AnyFlatSpec with Diagrams with TimeLimits {
   }
 
   "nonNegativeInt" should "マイナスは返らない" in {
-    val result1: (Int, RNG) = Random.nonNegativeInt(SimpleRNG(1))
+    val result1: (Int, RNG) = RNG.nonNegativeInt(SimpleRNG(1))
     assert(result1._1 == 384748)
     assert(result1._2 == SimpleRNG(25214903928L))
 
-    val result2: (Int, RNG) = Random.nonNegativeInt(SimpleRNG(-1)) // これで-384749が生成される
+    val result2: (Int, RNG) = RNG.nonNegativeInt(SimpleRNG(-1)) // これで-384749が生成される
     assert(result2._1 == 384748) // -384749 がプラスになり384749。-1して384748になる。
     assert(result2._2 == SimpleRNG(281449761806750L))
 
-    val result3: (Int, RNG) = Random.nonNegativeInt(SimpleRNG(0))
+    val result3: (Int, RNG) = RNG.nonNegativeInt(SimpleRNG(0))
     assert(result3._1 == 0)
     assert(result3._2 == SimpleRNG(11))
   }
 
   "double" should "小数" in {
-    val result1: (Double, RNG) = Random.double(SimpleRNG(1))
+    val result1: (Double, RNG) = RNG.double(SimpleRNG(1))
     assert(result1._1 == 1.7916224896907806E-4)
     assert(result1._2 == SimpleRNG(25214903928L)) // RNGは同じものが返ってくるよ
 
-    val result2: (Double, RNG) = Random.double(SimpleRNG(-1))
+    val result2: (Double, RNG) = RNG.double(SimpleRNG(-1))
     assert(result2._1 == 1.7916224896907806E-4)
     assert(result2._2 == SimpleRNG(281449761806750L))
 
-    val result3: (Double, RNG) = Random.double(SimpleRNG(0))
+    val result3: (Double, RNG) = RNG.double(SimpleRNG(0))
     assert(result3._1 == 0)
     assert(result3._2 == SimpleRNG(11))
   }
 
   "intDouble" should "ペア" in {
-    val result1: ((Int, Double), RNG) = Random.intDouble(SimpleRNG(1))
+    val result1: ((Int, Double), RNG) = RNG.intDouble(SimpleRNG(1))
     assert(result1._1._1 == 384748)
     assert(result1._1._2 == 0.5360936457291245)
     assert(result1._2 == SimpleRNG(206026503483683L))
   }
 
   "doubleInt" should "ペア" in {
-    val result1: ((Double, Int), RNG) = Random.doubleInt(SimpleRNG(1))
+    val result1: ((Double, Int), RNG) = RNG.doubleInt(SimpleRNG(1))
     assert(result1._1._1 == 1.7916224896907806E-4)
     assert(result1._1._2 == -1151252339)
     assert(result1._2 == SimpleRNG(206026503483683L))
   }
 
   "doubledoubledouble" should "ペア" in {
-    val result1: ((Double, Double, Double), RNG) = Random.double3(SimpleRNG(1))
+    val result1: ((Double, Double, Double), RNG) = RNG.double3(SimpleRNG(1))
     assert(result1._1._1 == 1.7916224896907806E-4)
     assert(result1._1._2 == 0.5360936457291245)
     assert(result1._1._3 == 0.2558267889544368)
@@ -64,21 +64,21 @@ class RandomTest extends AnyFlatSpec with Diagrams with TimeLimits {
   }
 
   "ints" should "ペア" in {
-    val result1: (List[Int], RNG) = Random.ints(3)(SimpleRNG(1))
+    val result1: (List[Int], RNG) = RNG.ints(3)(SimpleRNG(1))
     assert(result1._1 == List(-549383847, -1151252339, 384748))
     assert(result1._2 == SimpleRNG(245470556921330L))
   }
 
   "double_map" should "小数" in {
-    val result1: (Double, RNG) = Random.double_map(SimpleRNG(1))
+    val result1: (Double, RNG) = RNG.double_map(SimpleRNG(1))
     assert(result1._1 == 1.7916224896907806E-4)
     assert(result1._2 == SimpleRNG(25214903928L)) // RNGは同じものが返ってくるよ
 
-    val result2: (Double, RNG) = Random.double_map(SimpleRNG(-1))
+    val result2: (Double, RNG) = RNG.double_map(SimpleRNG(-1))
     assert(result2._1 == 1.7916224896907806E-4)
     assert(result2._2 == SimpleRNG(281449761806750L))
 
-    val result3: (Double, RNG) = Random.double_map(SimpleRNG(0))
+    val result3: (Double, RNG) = RNG.double_map(SimpleRNG(0))
     assert(result3._1 == 0)
     assert(result3._2 == SimpleRNG(11))
   }
@@ -103,13 +103,13 @@ class RandomTest extends AnyFlatSpec with Diagrams with TimeLimits {
   }
 
   "ints_sequence" should "ペア" in {
-    val result1: (List[Int], RNG) = Random.ints_sequence(3)(SimpleRNG(1))
+    val result1: (List[Int], RNG) = RNG.ints_sequence(3)(SimpleRNG(1))
     assert(result1._1 == List(-549383847, -1151252339, 384748))
     assert(result1._2 == SimpleRNG(245470556921330L))
   }
 
   "nonNegativeLessThen" should "nの範囲内でマイナスじゃない" in {
-    val result = Random.nonNegativeLessThen(10)(SimpleRNG(1))
+    val result = RNG.nonNegativeLessThen(10)(SimpleRNG(1))
     assert(result._1 == 8)
     assert(result._2 == SimpleRNG(25214903928L))
   }
@@ -124,7 +124,7 @@ class RandomTest extends AnyFlatSpec with Diagrams with TimeLimits {
   }
 
   "nonNegativeLessThen_flatMap" should "nの範囲内でマイナスじゃない" in {
-    val result = Random.nonNegativeLessThen_flatMap(10)(SimpleRNG(1))
+    val result = RNG.nonNegativeLessThen_flatMap(10)(SimpleRNG(1))
     assert(result._1 == 8)
     assert(result._2 == SimpleRNG(25214903928L))
   }

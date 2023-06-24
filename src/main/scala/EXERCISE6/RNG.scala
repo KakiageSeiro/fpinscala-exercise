@@ -17,7 +17,7 @@ case class SimpleRNG(seed: Long) extends RNG {
   }
 }
 
-object Random {
+object RNG {
   // EXERCISE 6.1
   // 生成器から○○つくる(これはマイナスではない数字)
   def nonNegativeInt(rng: RNG): (Int, RNG) = {
@@ -27,6 +27,11 @@ object Random {
       else i
     (マイナスではない整数, r)
   }
+
+  def boolean(rng: RNG): (Boolean, RNG) =
+    rng.nextInt match {
+      case (i, rng2) => (i % 2 == 0, rng2)
+    }
 
   // EXERCISE 6.2
   // 生成器から○○つくる(これは小数)
@@ -97,7 +102,7 @@ object Random {
   }
 
   // 2つの生成器を受け取って、2つの結果を返す
-  def both[A, B](ra: Rand[A], rb: Rand[B]): Rand[(A, B)] ={
+  def both[A, B](ra: Rand[A], rb: Rand[B]): Rand[(A, B)] = {
     map2(ra, rb)((_, _))
   }
 
@@ -125,7 +130,7 @@ object Random {
 
   // EXERCISE 6.8
   // 0 ~ n(nは含まない)までの整数を生成する
-  def nonNegativeLessThen(n :Int) : Rand[Int] = { rng =>
+  def nonNegativeLessThen(n: Int): Rand[Int] = { rng =>
     val (i, rng2) = nonNegativeInt(rng)
     val mod = i % n
     val 最大値: Int = n - 1
@@ -143,7 +148,7 @@ object Random {
     }
   }
 
-  def nonNegativeLessThen_flatMap(n :Int) : Rand[Int] = { rng =>
+  def nonNegativeLessThen_flatMap(n: Int): Rand[Int] = { rng =>
     flatMap(nonNegativeInt)(i => {
       val mod = i % n
       val 最大値: Int = n - 1
