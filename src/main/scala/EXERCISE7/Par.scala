@@ -118,5 +118,95 @@ object Par {
 
     sequence(aList.map(filter))
   }
+
+  // Parの比較方法
+  // ExecutorServiceを引数にとり、getでとったFutureが同じなら、Parも等しいということにする
+  def equal[A](e: ExecutorService)(p: Par[A], p2: Par[A]): Boolean =
+    p(e).get == p2(e).get
+
+  // EXERCISE 7.7
+  // map(map(y)(g))(f) = map(y)(f compose g) // composeはgのあとにfを適用する関数を生成する
+  // map(hoge)(f) = map(hoge)(f) // gを適用する部分をhogeにしてみた
+  // こういう感じで計算される順序をたどっていけばいいのかと思ったが、答えみたら全然ちがったしなぜそれで証明になるのかや、1から2になる変形の意図も理解できなかった。
+
+  // 呼出しまで計算(Parにする処理)を遅らせる
+  def delay[A](fa: => Par[A]): Par[A] =
+    es => fa(es)
+
+  def choice[A](cond: Par[Boolean])(t: Par[A], f: Par[A]): Par[A] =
+    es =>
+      if (run(es)(cond).get)
+        t(es)
+      else f(es)
+
+  // EXERCISE 7.11
+  def choiceN[A](n :Par[Int])(choices: List[Par[A]]) : Par[A] =
+    es => {
+      val index = run(es)(n).get
+      val f = choices(index)
+      run(es)(f)
+    }
+
+  def choiceViaChoiceN[A](cond: Par[Boolean])(t: Par[A], f: Par[A]): Par[A] = {
+    es =>
+      val n: () => Par[Int] = () => if (run(es)(cond).get) unit(0) else unit(1)
+      choiceN(n())(List(t, f))(es)
+  }
+
+  // EXERCISE 7.12
+  def choiceMap[K, V](key: Par[K])(choices: Map[K, Par[V]]): Par[V] =
+    es => {
+      val k = run(es)(key).get
+      val f = choices(k)
+      run(es)(f)
+    }
+
+  // EXERCISE 7.13
+  def chooser[A, B](pa: Par[A])(choices: A => Par[B]): Par[B] =
+    es => {
+      val a = run(es)(pa).get
+      val f = choices(a)
+      run(es)(f)
+    }
+
+  def choiceViaChooser[A](cond: Par[Boolean])(t: Par[A], f: Par[A]): Par[A] =
+    chooser(cond)(if (_) t else f)
+
+  def choiceNViaChooser[A](n: Par[Int])(choices: List[Par[A]]): Par[A] =
+    chooser(n)(choices(_))
+
+  // EXERCISE 7.14
+  def join[A](a: Par[Par[A]]): Par[A] =
+    es => {
+      val aa: Par[A] = run(es)(a).get()
+      val aaa: Future[A] = run(es)(aa)
+      aaa
+    }
+
+  def flatMapViaJoin[A, B](par: Par[A])(f: A => Par[B]): Par[B] =
+    join(map(par)(f))
+
+  def flatMap[A, B](par: Par[A])(f: A => Par[B]): Par[B] =
+    es => {
+      val a = run(es)(par).get
+      val b = f(a)
+      run(es)(b)
+    }
+
+  def joinViaFlatMap[A](par: Par[Par[A]]): Par[A] =
+    flatMap(par)(identity)
+
+
+
+
+
+
+
+
+
+
+
+
+
 }
 
