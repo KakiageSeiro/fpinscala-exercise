@@ -13,12 +13,25 @@ trait Prop {
   def check: Either[(FaildCase, SuccessCount), SuccessCount]
 
   def &&(p: Prop): Prop = new Prop {
-    def check = Prop.this.check && p.check
+    def check = Prop.this.check.map(p.check) match {
+      case Right(value) => Right(value)
+    }
   }
 }
 
 // 思い出し。State[RNG, A]はRNGをつかってAを生成し、次の値を生成するRNGと一緒に返す。
-case class Gen[A](sample: State[RNG, A])
+case class Gen[A](sample: State[RNG, A]){
+  // EXERCISE 8.6
+  def flatMap[B](f: A => Gen[B]): Gen[B] =
+    Gen(sample.flatMap(a => f(a).sample))
+
+  // 引数にIntを取る。↓のlistOfNはGen[Int]を取るので、文脈(Gen)をflatMapで外したIntを取れば、objectに定義してあるlistOfNを使える。
+  def listOfN(size: Int): Gen[List[A]] =
+    Gen.listOfN(size, this)
+
+  def listOfN(size: Gen[Int]): Gen[List[A]] =
+    size.flatMap(n => this.listOfN(n))
+}
 
 object Gen {
   def forAll[A](a: Gen[A])(f: A => Boolean): Prop = ???
