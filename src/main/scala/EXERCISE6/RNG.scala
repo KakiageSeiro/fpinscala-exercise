@@ -28,6 +28,7 @@ object RNG {
     (マイナスではない整数, r)
   }
 
+  // 偶数の場合true、あと次の生成器を返す
   def boolean(rng: RNG): (Boolean, RNG) =
     rng.nextInt match {
       case (i, rng2) => (i % 2 == 0, rng2)
