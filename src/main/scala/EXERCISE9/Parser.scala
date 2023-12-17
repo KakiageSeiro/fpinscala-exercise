@@ -19,6 +19,11 @@ trait Parsers[ParseError, Parser[+_]] {
     string(c.toString) map (_.charAt(0))
   }
 
+  // これがなんなのかよく分からず書いている。mapの期待される動作である map(p)(a => a) == p をテストするために生えた？
+  // run(succeed(a))(s) == Right(a) のようにsucceedでなにもない空のParserをつくってsでなにも処理をしない。これでmapが想定通りの挙動かテストできてるの？
+  def succeed[A](a : A): Parser[A] =
+    string("") map (_ => a)
+
   // s1かs2どっちかにマッチすればよいパーサーを作成する関数
   def or[A](s1: Parser[A], s2: Parser[A]): Parser[A]
 
@@ -53,7 +58,12 @@ trait Parsers[ParseError, Parser[+_]] {
   // map(p)(a => a) == p // 第2引数はaからaへの変換"のみ"していることが前提
   def map[A, B](p: Parser[A])(f: A => B): Parser[B]
 
-
+  // sliceという名前はなにかをスライスするのではなく、入力文字列の調査した部分を返すかららしい。この本全体に渡って名前の付け方おかしくねえか！！変にひねった短い単語にせず「入力文字列の調査した部分を取得する()」って名前の関数にしたらいいだろ！！
+  // val aとbの文字数を数えるParser = ('a'|'b').many
+  // run(slice(aとbの文字数を数えるParser))("aaba") = Right("aaba")という挙動
+  //
+  // sliceは調査した部分にアクセスする必要があるので、sliceがプリミティブであることを強くにおわせる。とのことだが、これはsliceの実装はプリミティブ(フィールドとかの意だと考えているけど調べてもでてこない)に触る関数っぽいという話？
+  def slice入力文字列の調査した部分を取得する[A](p: Parser[A]): Parser[String]
 
 
 
