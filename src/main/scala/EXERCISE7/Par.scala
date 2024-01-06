@@ -97,8 +97,8 @@ object Par {
       map2(sequenceBalanced(l), sequenceBalanced(r))(_ ++ _)
   }
 
-  def sequence[A](pas: List[Par[A]]): Par[List[A]] =
-    map(sequenceBalanced(pas.toIndexedSeq))(_.toList)
+//  def sequence[A](pas: List[Par[A]]): Par[List[A]] =
+//    map(sequenceBalanced(pas.toIndexedSeq))(_.toList)
 
   def map[A, B](par: Par[A])(f: A => B): Par[B] = {
     // unit(())は利用しない
@@ -112,12 +112,12 @@ object Par {
   }
 
   // EXERCISE 7.6
-  def parFilter[A](aList: List[A])(f: A => Boolean): Par[List[A]] = {
-    val filter: A => Par[List[A]] =
-      asyncF((a: A) => if (f(a)) List(a) else List.empty[A])
-
-    sequence(aList.map(filter))
-  }
+//  def parFilter[A](aList: List[A])(f: A => Boolean): Par[List[A]] = {
+//    val filter: A => Par[List[A]] =
+//      asyncF((a: A) => if (f(a)) List(a) else List.empty[A])
+//
+//    sequence(aList.map(filter))
+//  }
 
   // Parの比較方法
   // ExecutorServiceを引数にとり、getでとったFutureが同じなら、Parも等しいということにする

@@ -12,11 +12,11 @@ trait Prop {
   self => // traitを実装したインスタンスの自己参照する記法
   def check: Either[(FaildCase, SuccessCount), SuccessCount]
 
-  def &&(p: Prop): Prop = new Prop {
-    def check = Prop.this.check.map(p.check) match {
-      case Right(value) => Right(value)
-    }
-  }
+//  def &&(p: Prop): Prop = new Prop {
+////    def check = Prop.this.check.map(p.check) match {
+////      case Right(value) => Right(value)
+////    }
+//  }
 }
 
 // 思い出し。State[RNG, A]はRNGをつかってAを生成し、次の値を生成するRNGと一緒に返す。

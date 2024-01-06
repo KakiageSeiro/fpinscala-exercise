@@ -14,15 +14,15 @@ trait Parsers[ParseError, Parser[+_]] {
   def run[A](p: Parser[A])(input: String): Either[ParseError, A]
 
   // 各型に対応するパーサーを作成する関数。ここではcharだけ
-  def char(c: Char): Parser[Char] = {
-    // stringはOpsの関数でParser[string]を返す。やはりmapをParserクラスのメソッドとして定義することを期待されている？それともこのような使い方をしたいから事前に処理を書いておこうねってことなんだろうか？
-    string(c.toString) map (_.charAt(0))
-  }
+//  def char(c: Char): Parser[Char] = {
+//    // stringはOpsの関数でParser[string]を返す。やはりmapをParserクラスのメソッドとして定義することを期待されている？それともこのような使い方をしたいから事前に処理を書いておこうねってことなんだろうか？
+//    string(c.toString) map (_.charAt(0))
+//  }
 
   // これがなんなのかよく分からず書いている。mapの期待される動作である map(p)(a => a) == p をテストするために生えた？
   // run(succeed(a))(s) == Right(a) のようにsucceedでなにもない空のParserをつくってsでなにも処理をしない。これでmapが想定通りの挙動かテストできてるの？
-  def succeed[A](a : A): Parser[A] =
-    string("") map (_ => a)
+//  def succeed[A](a : A): Parser[A] =
+//    string("") map (_ => a)
 
   // s1かs2どっちかにマッチすればよいパーサーを作成する関数
   def or[A](s1: Parser[A], s2: Parser[A]): Parser[A]
@@ -80,14 +80,14 @@ trait Parsers[ParseError, Parser[+_]] {
   // Lawsは法則の意
   object Laws {
     // forallって何？
-    def equal[A](p1: Parser[A], p2: Parser[A])(in: Gen[String]): Prop =
-      forall(in)(s => run(p1)(s) == run(p2)(s))
+//    def equal[A](p1: Parser[A], p2: Parser[A])(in: Gen[String]): Prop =
+//      forall(in)(s => run(p1)(s) == run(p2)(s))
 
 
     // p.map()という呼出しはできない。map(p)(a => a)にしないと…そもそもParserはまだ定義していないので、classとして定義することを期待されてる？
     // ここでなぜこのような書き方が登場するのかわからない。単に書籍がまちがっているのか、そのように呼び出せるように読者が実装するようにすることを期待されているのか…
-    def mapLaw[A](p: Parser[A])(in: Gen[String]): Prop =
-      equal(p, p.map(a => a))(in)
+//    def mapLaw[A](p: Parser[A])(in: Gen[String]): Prop =
+//      equal(p, p.map(a => a))(in)
   }
 
 
