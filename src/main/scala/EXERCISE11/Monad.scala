@@ -45,8 +45,28 @@ trait Monad[F[_]] extends Functor[F] {
     }
 
   // EXERCISE 11.7
+  // モナドの結合というよりは、モナド関数 A => F[B] の合成のことかも
+  // これをクライスリ射という
   def compose[A, B, C](f: A => F[B], g: B => F[C]): A => F[C] =
     a => flatMap(f(a))(g)
+
+  // 上記のモナド関数の結合律であるクライスリ射を利用して、モナド自体の結合律を表現できる
+  // compose(compose(f, g), h) = compose(f, compose(g, h))
+  // このように、モナド関数の合成はどこからやってもOK
+  //   考え方の助け?：モノイドがopで結合を定義していた。モナドでは関数の合成がcomposeなので似てるけど微妙に違う。
+  //   これはモノイドが値の抽象で、モナドが関数への抽象。みたいな役割の分かれ方をしているように感じれる。
+
+  // 同一律は以下のようになる
+  // compose(f, unit) = f
+  // compose(unit, f) = f
+
+  // モナドとは
+  // その１。以下のいずれかが実装されている
+  //   ・unit, flatMap
+  //   ・unit, compose
+  //   ・unit, map, join
+  // その２。結合律と同一律を満たしている
+
 
   // EXERCISE 11.13
   def compose2[A, B, C](f: A => F[B], g: B => F[C]): A => F[C] =
