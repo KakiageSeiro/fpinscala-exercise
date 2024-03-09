@@ -165,18 +165,24 @@ object validationApplicative {
           case (_, e@Failure(_, _)) => e
         }
 
+//      override def map3[A, B, C, D](fa: Validation[E, A], fb: Validation[E, B], fc: Validation[E, C])(f: (A, B, C) => D): Validation[E, D] =
+//        (fa, fb, fc) match {
+//          case (Success(a), Success(b), Success(c)) => Success(f(a, b, c))
+//
+//          // 全部のエラーを連結する。ここでEitherモナドの問題を解決している
+//          case (Failure(h1, t1), Failure(h2, t2), Failure(h3, t3)) => Failure(h1, t1 ++ Vector(h2, h3) ++ t2 ++ t3)
+//
+//          // どれかがFailureのパターンは、一つのFailureだけ返す
+//          case (e@Failure(_, _), _, _) => e // e@Failure(_, _)という記法は、eという変数にFailureインスタンスをバインドする記法
+//          case (_, e@Failure(_, _), _) => e
+//          case (_, _, e@Failure(_, _)) => e
+//        }
+
       override def map3[A, B, C, D](fa: Validation[E, A], fb: Validation[E, B], fc: Validation[E, C])(f: (A, B, C) => D): Validation[E, D] =
-        (fa, fb, fc) match {
-          case (Success(a), Success(b), Success(c)) => Success(f(a, b, c))
-
-          // 全部のエラーを連結する。ここでEitherモナドの問題を解決している
-          case (Failure(h1, t1), Failure(h2, t2), Failure(h3, t3)) => Failure(h1, t1 ++ Vector(h2, h3) ++ t2 ++ t3)
-
-          // どれかがFailureのパターンは、一つのFailureだけ返す
-          case (e@Failure(_, _), _, _) => e // e@Failure(_, _)という記法は、eという変数にFailureインスタンスをバインドする記法
-          case (_, e@Failure(_, _), _) => e
-          case (_, _, e@Failure(_, _)) => e
-        }
+        validationApplicative.map2(
+          validationApplicative.map2(fa, fb)((a, b) => (a, b)), // タプルにするだけ
+          fc
+        ) { case ((a, b), c) => f(a, b, c) } // タプルを受け取って分解してfする
 
     }
 
