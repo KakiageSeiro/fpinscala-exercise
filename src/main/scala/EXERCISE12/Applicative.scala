@@ -128,68 +128,81 @@ trait Monad[F[_]] extends Applicative2[F] {
 // (実装見てないけど、そういう挙動をするのはわかるよな)ので
 // 最初にエラーが発生したタイミングで止まる(そしてエラーを1つだけ返す)
 // だが、バリデーションのようなケースだとすべてのフィールドのエラーを全部検証したあとにエラーをまとめてほしい
-def eitherMonad[Error]: Monad[({type f[x] = Either[Error, x]})#f] =
-  new Monad[({type f[x] = Either[Error, x]})#f] {
-
-    def unit[A](a: => A): Either[Error, A] = Right(a)
-
-    override def flatMap[A,B](eea: Either[Error, A])(f: A => Either[Error, B]) = eea match {
-      case Right(a) => f(a)
-      case Left(e) => Left(e)
-    }
-  }
-
+//def eitherMonad[Error]: Monad[({type f[x] = Either[Error, x]})#f] =
+//  new Monad[({type f[x] = Either[Error, x]})#f] {
+//
+//    def unit[A](a: => A): Either[Error, A] = Right(a)
+//
+//    override def flatMap[A,B](eea: Either[Error, A])(f: A => Either[Error, B]) = eea match {
+//      case Right(a) => f(a)
+//      case Left(e) => Left(e)
+//    }
+//  }
+//
 // 上記Eitherモナドの問題点を解決するtraitを考える
 sealed trait Validation[+E, +A]
 
 case class Failure[E](head: E, tail: Vector[E] = Vector()) extends Validation[E, Nothing]
 case class Success[A](a: A) extends Validation[Nothing, A]
 
-// EXERCISE 12.6
-def validationApplicative[E]: Applicative2[({type f[x] = Validation[E,x]})#f] =
-  new Applicative2[({type f[x] = Validation[E,x]})#f] {
 
-    def unit[A](a: => A) = Success(a)
+object validationApplicative {
+  // EXERCISE 12.6
+  def validationApplicative[E]: Applicative2[({type f[x] = Validation[E, x]})#f] =
+    new Applicative2[({type f[x] = Validation[E, x]})#f] {
 
-    override def map2[A,B,C](fa: Validation[E,A], fb: Validation[E,B])(f: (A, B) => C) =
-      (fa, fb) match {
-        case (Success(a), Success(b)) => Success(f(a, b))
+      def unit[A](a: => A) = Success(a)
 
-        // 全部のエラーを連結する。ここでEitherモナドの問題を解決している
-        case (Failure(h1, t1), Failure(h2, t2)) => Failure(h1, t1 ++ Vector(h2) ++ t2)
+      override def map2[A, B, C](fa: Validation[E, A], fb: Validation[E, B])(f: (A, B) => C) =
+        (fa, fb) match {
+          case (Success(a), Success(b)) => Success(f(a, b))
 
-        // どちらかがFailureのパターンは、一つのFailureだけ返す
-        case (e@Failure(_, _), _) => e // e@Failure(_, _)という記法は、eという変数にFailureインスタンスをバインドする記法
-        case (_, e@Failure(_, _)) => e
-      }
+          // 全部のエラーを連結する。ここでEitherモナドの問題を解決している
+          case (Failure(h1, t1), Failure(h2, t2)) => Failure(h1, t1 ++ Vector(h2) ++ t2)
 
-  }
+          // どちらかがFailureのパターンは、一つのFailureだけ返す
+          case (e@Failure(_, _), _) => e // e@Failure(_, _)という記法は、eという変数にFailureインスタンスをバインドする記法
+          case (_, e@Failure(_, _)) => e
+        }
 
-// valid○○の関数からはValidation型を返すようにする
-def validName(name: String): Validation[String, String] =
-  if (name != "") Success(name)
-  else Failure("名前が入力されてないよ〜")
+      override def map3[A, B, C, D](fa: Validation[E, A], fb: Validation[E, B], fc: Validation[E, C])(f: (A, B, C) => D): Validation[E, D] =
+        (fa, fb, fc) match {
+          case (Success(a), Success(b), Success(c)) => Success(f(a, b, c))
 
-// 誕生日と電話番号の実装は適当
-def validBirthdate(name: String): Validation[String, String] =
-  if (name != "") Success(name)
-  else Failure("誕生日がにゅうりょくされてないよ！")
+          // 全部のエラーを連結する。ここでEitherモナドの問題を解決している
+          case (Failure(h1, t1), Failure(h2, t2), Failure(h3, t3)) => Failure(h1, t1 ++ Vector(h2, h3) ++ t2 ++ t3)
 
-def validPhone(name: String): Validation[String, String] =
-  if (name != "") Success(name)
-  else Failure("電話番号が入力されてないよ〜")
+          // どれかがFailureのパターンは、一つのFailureだけ返す
+          case (e@Failure(_, _), _, _) => e // e@Failure(_, _)という記法は、eという変数にFailureインスタンスをバインドする記法
+          case (_, e@Failure(_, _), _) => e
+          case (_, _, e@Failure(_, _)) => e
+        }
 
-case class WebForm(name: String, birthdate: String, phone: String)
+    }
 
-def validWebForm(name: String, birthdate: String, phone: String): Validation[String, WebForm] =
-  validationApplicative.map3(
-    validName(name),
-    validBirthdate(birthdate),
-    validPhone(phone)
-  )(WebForm)
+  // valid○○の関数からはValidation型を返すようにする
+  def validName(name: String): Validation[String, String] =
+    if (name != "") Success(name)
+    else Failure("名前が入力されてないよ〜")
 
+  // 誕生日と電話番号の実装は適当
+  def validBirthdate(name: String): Validation[String, String] =
+    if (name != "") Success(name)
+    else Failure("誕生日がにゅうりょくされてないよ！")
 
+  def validPhone(name: String): Validation[String, String] =
+    if (name != "") Success(name)
+    else Failure("電話番号が入力されてないよ〜")
 
+  case class WebForm(name: String, birthdate: String, phone: String)
+
+  def validWebForm(name: String, birthdate: String, phone: String): Validation[String, WebForm] =
+    validationApplicative.map3(
+      validName(name),
+      validBirthdate(birthdate),
+      validPhone(phone)
+    )(WebForm)
+}
 
 
 

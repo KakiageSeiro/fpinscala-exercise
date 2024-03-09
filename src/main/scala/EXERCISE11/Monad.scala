@@ -18,12 +18,13 @@ trait Monad[F[_]] extends Functor[F] {
 
   // EXERCISE 11.13
   def sequence[A](lma: List[F[A]]): F[List[A]] =
-    lma.foldRight(List[A])((ma, mla) => map2(ma, mla)(_ :: _))
+    lma.foldRight(unit(List.empty[A]))((ma, mla) => map2(ma, mla)(_ :: _))
 
   def traverse[A, B](la: List[A])(f: A => F[B]): F[List[B]] = {
-    val b_list = la.foldRight(List[B])((a: A, lb: List[B]) => f(a) :: lb)
-    unit(b_list)
+    val b_list: F[List[B]] = la.foldRight(unit(List.empty[B]))((a: A, lb: F[List[B]]) => map2(f(a), lb)(_ :: _))
+    b_list
   }
+
 
   // EXERCISE 11.4
   // モナドを複製の意
@@ -85,7 +86,7 @@ trait Monad[F[_]] extends Functor[F] {
 
 object Monad {
   val gemMonad = new Monad[Gen] {
-    def unit[A](a: => A): Gen[A] = Gen.unit()
+    def unit[A](a: => A): Gen[A] = Gen.unit(a)
 
     override def flatMap[A, B](ma: Gen[A])(f: A => Gen[B]): Gen[B] = ma.flatMap(f)
   }
