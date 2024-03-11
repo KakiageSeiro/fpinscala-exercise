@@ -50,6 +50,21 @@ trait Applicative2[F[_]] extends Functor[F] {
   ): F[E] =
     apply(apply(apply(apply(unit(f.curried))(fa))(fb))(fc))(fd)
 
+  // EXERCISE 12.12
+  // 答え見た。for文の外でmap宣言してfor文の中でputしていくような処理は、foldをつかってacc=外で宣言するやつ と考えればいいのか
+  def sequenceMap[K, V](ofa: Map[K, F[V]]): F[Map[K, V]] = {
+    // ここの末尾の{}を()にするとコンパイルエラーになる。case パターンとして前回の結果であるaccと(k,fv)をとる必要があり、caseはブロックじゃないと使えないから？
+    ofa.foldLeft(unit(Map.empty[K, V])) {
+      case (acc, (k, fv)) => map2(acc, fv)((m, v) => m + (k -> v))
+    }
+  }
+
+  def traverse[A, B](as: List[A])(f: A => F[B]): F[List[B]] =
+    as.foldRight(unit(List[B]()))((a, fbs) => map2(f(a), fbs)(_ :: _))
+
+  def sequence[A](fas: List[F[A]]): F[List[A]] =
+    traverse(fas)(fa => fa)
+
 }
 
 trait Applicative[F[_]] extends Functor[F] {
@@ -142,27 +157,31 @@ trait Monad[F[_]] extends Applicative2[F] {
 // 上記Eitherモナドの問題点を解決するtraitを考える
 sealed trait Validation[+E, +A]
 
-case class Failure[E](head: E, tail: Vector[E] = Vector()) extends Validation[E, Nothing]
+case class Failure[E](head: E, tail: Vector[E] = Vector())
+    extends Validation[E, Nothing]
 case class Success[A](a: A) extends Validation[Nothing, A]
-
 
 object validationApplicative {
   // EXERCISE 12.6
-  def validationApplicative[E]: Applicative2[({type f[x] = Validation[E, x]})#f] =
-    new Applicative2[({type f[x] = Validation[E, x]})#f] {
+  def validationApplicative[E]
+    : Applicative2[({ type f[x] = Validation[E, x] })#f] =
+    new Applicative2[({ type f[x] = Validation[E, x] })#f] {
 
       def unit[A](a: => A) = Success(a)
 
-      override def map2[A, B, C](fa: Validation[E, A], fb: Validation[E, B])(f: (A, B) => C) =
+      override def map2[A, B, C](fa: Validation[E, A],
+                                 fb: Validation[E, B])(f: (A, B) => C) =
         (fa, fb) match {
           case (Success(a), Success(b)) => Success(f(a, b))
 
           // 全部のエラーを連結する。ここでEitherモナドの問題を解決している
-          case (Failure(h1, t1), Failure(h2, t2)) => Failure(h1, t1 ++ Vector(h2) ++ t2)
+          case (Failure(h1, t1), Failure(h2, t2)) =>
+            Failure(h1, t1 ++ Vector(h2) ++ t2)
 
           // どちらかがFailureのパターンは、一つのFailureだけ返す
-          case (e@Failure(_, _), _) => e // e@Failure(_, _)という記法は、eという変数にFailureインスタンスをバインドする記法
-          case (_, e@Failure(_, _)) => e
+          case (e @ Failure(_, _), _) =>
+            e // e@Failure(_, _)という記法は、eという変数にFailureインスタンスをバインドする記法
+          case (_, e @ Failure(_, _)) => e
         }
 
 //      override def map3[A, B, C, D](fa: Validation[E, A], fb: Validation[E, B], fc: Validation[E, C])(f: (A, B, C) => D): Validation[E, D] =
@@ -178,7 +197,11 @@ object validationApplicative {
 //          case (_, _, e@Failure(_, _)) => e
 //        }
 
-      override def map3[A, B, C, D](fa: Validation[E, A], fb: Validation[E, B], fc: Validation[E, C])(f: (A, B, C) => D): Validation[E, D] =
+      override def map3[A, B, C, D](
+        fa: Validation[E, A],
+        fb: Validation[E, B],
+        fc: Validation[E, C]
+      )(f: (A, B, C) => D): Validation[E, D] =
         validationApplicative.map2(
           validationApplicative.map2(fa, fb)((a, b) => (a, b)), // タプルにするだけ
           fc
@@ -202,18 +225,12 @@ object validationApplicative {
 
   case class WebForm(name: String, birthdate: String, phone: String)
 
-  def validWebForm(name: String, birthdate: String, phone: String): Validation[String, WebForm] =
+  def validWebForm(name: String,
+                   birthdate: String,
+                   phone: String): Validation[String, WebForm] =
     validationApplicative.map3(
       validName(name),
       validBirthdate(birthdate),
       validPhone(phone)
     )(WebForm)
 }
-
-
-
-
-
-
-
-
