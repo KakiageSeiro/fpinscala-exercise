@@ -1,5 +1,6 @@
 package EXERCISE11
 
+import EXERCISE6.State
 import EXERCISE8.Gen
 
 trait Monad[F[_]] extends Functor[F] {
@@ -103,6 +104,25 @@ object Monad {
 
     override def flatMap[A, B](ma: List[A])(f: A => List[B]): List[B] = ma.flatMap(f)
   }
+
+  class StateMonads[S] {
+    type StateS[A] = State[S, A]
+
+    // We can then declare the monad for the `StateS` type constructor:
+    val monad = new Monad[StateS] {
+      def unit[A](a: => A): State[S, A] = State(s => (a, s))
+      override def flatMap[A,B](st: State[S, A])(f: A => State[S, B]): State[S, B] =
+        st flatMap f
+    }
+  }
+
+  def stateMonad[S] = new Monad[({type lambda[x] = State[S, x]})#lambda] {
+    def unit[A](a: => A): State[S, A] = State(s => (a, s))
+    override def flatMap[A,B](st: State[S, A])(f: A => State[S, B]): State[S, B] =
+      st flatMap f
+  }
+
+  val F = stateMonad[Int]
 }
 
 // EXERCISE 11.17
@@ -121,6 +141,7 @@ object Id {
     override def flatMap[A, B](ma: Id[A])(f: A => Id[B]): Id[B] = f(ma.value)
   }
 }
+
 
 
 
