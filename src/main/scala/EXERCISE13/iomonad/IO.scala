@@ -65,6 +65,27 @@ def fahrenheitToCelsius(f: Double): Double =
   (f - 32) * 5.0 / 9.0
 
 
+// 階乗。定義していない関数が多数登場するが、あくまでも例なので…ということらしい
+// ミュータブルな参照を触って書き換えることができるよ。それをしてもIOが戻り値なので関数型プログラミングを邪魔しないよ。という例
+//
+//def factorial(n: Int): IO[Int] = for {
+//  acc <- ref(1)
+//  _ <- foreachM (1 to n toStream) (i => acc.modify(_ * i).skip)
+//  result <- acc.get
+//} yield result
+
+// こちらは対話型のUIを実現するのに、無限ループとかを使ってるけど、IOが戻り値なので関数型プログラミングを邪魔しないよ。の例
+//
+//val factorialREPL: IO[Unit] = sequence_(
+//  IO { println(helpstring) },
+//  doWhile { IO { readLine } } { line =>
+//    val ok = line != "q"
+//    when (ok) { for {
+//      n <- factorial(line.toInt)
+//      _ <- IO { println("factorial: " + n) }
+//    } yield () }
+//  }
+//)
 
 
 
