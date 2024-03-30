@@ -122,6 +122,10 @@ trait Monad[F[_]] extends Applicative2[F] {
 
   override def map2[A, B, C](fa: F[A], fb: F[B])(f: (A, B) => C): F[C] =
     flatMap(fa)(a => map(fb)(b => f(a, b)))
+
+  def replicateM[A](n: Int)(fa: F[A]): F[List[A]] =
+    sequence(List.fill(n)(fa))
+
 }
 
 // EXERCISE 12.5
